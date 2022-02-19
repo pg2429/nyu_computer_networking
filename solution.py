@@ -7,7 +7,9 @@ import sys
 def webServer(port=13331):
   serverSocket = socket(AF_INET, SOCK_STREAM)
   #Prepare a server socket
-  serverSocket.bind(('127.0.0.1', port))
+  HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
+  serverSocket.bind((HOST, port))
+  serverSocket.listen(1)
   #Fill in start
 
   #Fill in end
@@ -15,12 +17,19 @@ def webServer(port=13331):
   while True:
     #Establish the connection
     #print('Ready to serve...')
-    connectionSocket, addr = serverSocket, '127.0.0.1:13331/helloworld.html' #Fill in start      #Fill in end
+    connectionSocket, addr = serverSocket.accept() #Fill in start      #Fill in end
+    # conn, addr = s.accept()
+
     try:
 
       try:
-        message = addr #Fill in start    #Fill in end
-        filename = message.split('/')[1]
+        message = (connectionSocket.recv(4096)).decode("utf-8")
+
+    # Extract the filename from the given message
+        filename = (message.split()[1]).split('/')[1]
+        # filename = 'helloworld.html'
+
+        # filename = message.split('/')[1]
         f = open(filename[0:])
         outputdata = f.read()
         outputdata = 'HTTP/1.1 200 OK\r\n'+ outputdata
@@ -31,9 +40,9 @@ def webServer(port=13331):
         connectionSocket.send("\r\n".encode())
         connectionSocket.close()
       except IOError:
-        response = 'HTTP/1.1 404 Page not found\r\n'
-        connectionSocket.send(response.encode())
-        connectionSocket.close()
+        response = 'HTTP/1.1 404 Not Found\r\n'
+        # connectionSocket.send(response.encode())
+        # connectionSocket.close()
 
     except (ConnectionResetError, BrokenPipeError):
       pass
