@@ -1,46 +1,46 @@
-### welcome_assignment_answers
-### Input - All eight questions given in the assignment.
-### Output - The right answer for the specific question.
+# import socket module
+from socket import *
+# In order to terminate the program
+import sys
 
-def welcome_assignment_answers(question):
-    #Students do not have to follow the skeleton for this assignment.
-    #Another way to implement is using a "case" statements similar to C.
-    if question == "Are encoding and encryption the same? - Yes/No":
-        answer = "No"
-    elif question == "Is it possible to decrypt a message without a key? - Yes/No":
-        answer = "No"
-    elif question == "In Slack, what is the secret passphrase posted in the #lab-python-getting-started channel posted by a TA?":
-        answer = "mtls"
-    elif question == "Is it possible to decode a message without a key? - Yes/No":
-        answer = "Yes"
-    elif question == "Is a hashed message supposed to be un-hashed? - Yes/No":
-        answer = "No"
-    elif question == "What is the MD5 hashing value to the following message: 'NYU Computer Networking' - Use MD5 hash generator and use the answer in your code":
-        answer = "42b76fe51778764973077a5a94056724"
-    elif question == "Is MD5 a secured hashing algorithm? - Yes/No":
-        answer = "No"
-    elif question == "What layer from the TCP/IP model the protocol DHCP belongs to? - The answer should be a numeric number":
-        answer = 5
-    elif question == "What layer of the TCP/IP model the protocol TCP belongs to? - The answer should be a numeric number":
-        answer = 4
-    else:
-         answer = ""
-    return(answer)
-# Complete all the questions.
 
+def webServer(port=13331):
+  serverSocket = socket(AF_INET, SOCK_STREAM)
+  #Prepare a server socket
+  serverSocket.bind(('127.0.0.1', port))
+  #Fill in start
+
+  #Fill in end
+
+  while True:
+    #Establish the connection
+    #print('Ready to serve...')
+    connectionSocket, addr = serverSocket, '127.0.0.1:13331/helloworld.html' #Fill in start      #Fill in end
+    try:
+
+      try:
+        message = addr #Fill in start    #Fill in end
+        filename = message.split('/')[1]
+        f = open(filename[0:])
+        outputdata = f.read()
+        outputdata = 'HTTP/1.1 200 OK\r\n'+ outputdata
+
+        for i in range(0, len(outputdata)):
+          connectionSocket.send(outputdata[i].encode())
+
+        connectionSocket.send("\r\n".encode())
+        connectionSocket.close()
+      except IOError:
+        response = 'HTTP/1.1 404 Page not found\r\n'
+        connectionSocket.send(response.encode())
+        connectionSocket.close()
+
+    except (ConnectionResetError, BrokenPipeError):
+      pass
+
+  serverSocket.close()
+  sys.exit()  # Terminate the program after sending the corresponding data
 
 if __name__ == "__main__":
-    #use this space to debug and verify that the program works
-    debug_question = "Are encoding and encryption the same? - Yes/No"
-    print(welcome_assignment_answers(debug_question))
-
-###Questions:
-###"In Slack, what is the secret passphrase posted in the #lab-python-getting-started channel posted by a TA?"
-###"Are encoding and encryption the same? - Yes/No"
-###"Is it possible to decrypt a message without a key? - Yes/No"
-###"Is it possible to decode a message without a key? - Yes/No"
-###"Is a hashed message supposed to be un-hashed? - Yes/No"
-###"What is the MD5 hashing value to the following message: 'NYU Computer Networking' - Use MD5 hash generator and use the answer in your code"
-###"Is MD5 a secured hashing algorithm? - Yes/No"
-###"What layer from the TCP/IP model the protocol DHCP belongs to? - The answer should be a numeric number"
-###"What layer of the TCP/IP model the protocol TCP belongs to? - The answer should be a numeric number"
+  webServer(13331)
+  # webServer(8080)
