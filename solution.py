@@ -33,7 +33,7 @@ def webServer(port=13331):
         f = open(filename[0:])
         outputdata = f.read()
         responseStatus = 'HTTP/1.1 200 OK\r\n'
-        connectionSocket.send(responseStatus)
+        connectionSocket.send(responseStatus.encode())
 
         for i in range(0, len(outputdata)):
           connectionSocket.send(outputdata[i].encode())
