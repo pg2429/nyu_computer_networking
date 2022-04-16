@@ -1,62 +1,133 @@
 from socket import *
+import os
+import sys
+import struct
+import time
+import select
+import binascii
+import statistics as stat
+
+# Should use stdev
+
+ICMP_ECHO_REQUEST = 8
 
 
-def smtp_client(port=1025, mailserver='127.0.0.1'):
-    msg = "\r\n My message"
-    endmsg = "\r\n.\r\n"
-    mailserver = (mailserver,port) #Fill in start #Fill in end
-    clientSocket = socket(AF_INET, SOCK_STREAM)
-    clientSocket.connect(mailserver)
-    recv = clientSocket.recv(1024).decode()
+def checksum(string):
+    csum = 0
+    countTo = (len(string) // 2) * 2
+    count = 0
 
-    #print(recv) #You can use these print statement to validate return codes from the server.
-    # if recv[:3] != '220':
-    #     print('220 reply not received from server.')
-    # else:
-    #     print ("THIS IS FINE0")
+    while count < countTo:
+        thisVal = (string[count + 1]) * 256 + (string[count])
+        csum += thisVal
+        csum &= 0xffffffff
+        count += 2
 
-    # Send HELO command and print server response.
-    heloCommand = 'HELO Alice\r\n'
-    clientSocket.send(heloCommand.encode())
-    recv1 = clientSocket.recv(1024).decode()
-    # print(recv1)
+    if countTo < len(string):
+        csum += (string[len(string) - 1])
+        csum &= 0xffffffff
 
-    # Send MAIL FROM command and handle server response.
-    mailFrom = 'MAIL FROM:<pg2429@nyu.edu\r\n'
-    clientSocket.send(mailFrom.encode())
-    recv2 = clientSocket.recv(1024).decode()
-    # print(recv2)
-
-    # Send RCPT TO command and handle server response.
-    rcptTo = 'RCPT TO:<pg2429@nyu.edu>\r\n'
-    clientSocket.send(rcptTo.encode())
-    recv3 = clientSocket.recv(1024).decode()
-    # print(recv3)
-
-    # Send DATA command and handle server response.
-    data = 'DATA\r\n'
-    clientSocket.send(data.encode())
-    recv4 = clientSocket.recv(1024).decode()
-    # print(recv4)
-
-    # Send message data.
-    clientSocket.send((msg+endmsg).encode())
-    recv5 = clientSocket.recv(1024).decode()
-    # print(recv5)
+    csum = (csum >> 16) + (csum & 0xffff)
+    csum = csum + (csum >> 16)
+    answer = ~csum
+    answer = answer & 0xffff
+    answer = answer >> 8 | (answer << 8 & 0xff00)
+    return answer
 
 
-    # Message ends with a single period, send message end and handle server response.
-    # clientSocket.send(endmsg.encode())
-    # recv6 = clientSocket.recv(1024).decode()
-    # print(recv6)
 
-    # Send QUIT command and handle server response.
-    quit = 'QUIT\r\n'
-    clientSocket.send(quit.encode())
-    recv7 = clientSocket.recv(1024).decode()
-    # print(recv7)
+def receiveOnePing(mySocket, ID, timeout, destAddr):
+    timeLeft = timeout
 
-    clientSocket.close()
+    while 1:
+        startedSelect = time.time()
+        whatReady = select.select([mySocket], [], [], timeLeft)
+        howLongInSelect = (time.time() - startedSelect)
+        if whatReady[0] == []:  # Timeout
+            return "Request timed out."
+
+        timeReceived = time.time()
+        recPacket, addr = mySocket.recvfrom(1024)
+
+        # Fill in start
+
+        # Fetch the ICMP header from the IP packet
+        icmpHeader = recPacket[20:28]
+        type, code, checksum, packetID, sequence = struct.unpack("bbHHh", icmpHeader)
+        if packetID > 0:
+            return (timeReceived - startedSelect)
+        # Fill in end
+        timeLeft = timeLeft - howLongInSelect
+        if timeLeft <= 0:
+            return "Request timed out."
+
+
+def sendOnePing(mySocket, destAddr, ID):
+    # Header is type (8), code (8), checksum (16), id (16), sequence (16)
+
+    myChecksum = 0
+    # Make a dummy header with a 0 checksum
+    # struct -- Interpret strings as packed binary data
+    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
+    data = struct.pack("d", time.time())
+    # Calculate the checksum on the data and the dummy header.
+    myChecksum = checksum(header + data)
+
+    # Get the right checksum, and put in the header
+
+    if sys.platform == 'darwin':
+        # Convert 16-bit integers from host to network  byte order
+        myChecksum = htons(myChecksum) & 0xffff
+    else:
+        myChecksum = htons(myChecksum)
+
+
+    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
+    packet = header + data
+
+    mySocket.sendto(packet, (destAddr, 1))  # AF_INET address must be tuple, not str
+
+
+    # Both LISTS and TUPLES consist of a number of objects
+    # which can be referenced by their position number within the object.
+
+def doOnePing(destAddr, timeout):
+    icmp = getprotobyname("icmp")
+
+
+    # SOCK_RAW is a powerful socket type. For more details:   https://sock-raw.org/papers/sock_raw
+    mySocket = socket(AF_INET, SOCK_RAW, icmp)
+
+    myID = os.getpid() & 0xFFFF  # Return the current process i
+    sendOnePing(mySocket, destAddr, myID)
+    delay = receiveOnePing(mySocket, myID, timeout, destAddr)
+    mySocket.close()
+    return delay
+
+
+def ping(host, timeout=1):
+    # timeout=1 means: If one second goes by without a reply from the server,
+    # the client assumes that either the client's ping or the server's pong is lost
+    dest = gethostbyname(host)
+    print("Pinging " + dest + " using Python:")
+    print("")
+
+    #Send ping requests to a server separated by approximately one second
+    #Add something here to collect the delays of each ping in a list so you can calculate vars after your ping
+    delay_values = []
+    for i in range(0,4): #Four pings will be sent (loop runs for i=0, 1, 2, 3)
+        delay = doOnePing(dest, timeout)
+        delay_values.append(delay)
+        time.sleep(1)  # one second
+
+    packet_min = min(delay_values)
+    packet_avg = stat.mean(delay_values)
+    packet_max = max(delay_values)
+    packet_std = stat.stdev(delay_values)
+    #You should have the values of delay for each ping here; fill in calculation for packet_min, packet_avg, packet_max, and stdev
+    vars = [str(round(packet_min, 8)), str(round(packet_avg, 8)), str(round(packet_max, 8)),str(round(packet_std, 8))]
+
+    return vars
 
 if __name__ == '__main__':
-    smtp_client(1025, '127.0.0.1')
+    ping("google.co.il")
