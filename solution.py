@@ -165,7 +165,7 @@ def get_route(hostname):
                     tracelist1.append(rtt)
                     tracelist1.append(str(addr[0]))
                     tracelist1.append(str(host))
-                    print(tracelist1)
+                    # print(tracelist1)
                     tracelist2.append(tracelist1)
 
                     if destAddr == addr:
