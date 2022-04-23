@@ -121,7 +121,7 @@ def get_route(hostname):
                 icmpHeader = recvPacket[20:28]
                 types, code, checksum, packetID, sequence = struct.unpack("bbHHh", icmpHeader)
                 tracelist1 = []
-                tracelist1.append(ttl)
+                tracelist1.append(str(ttl))
                 # type, code, checksum, packetID, sequence = struct.unpack("bbHHh", icmpHeader)
 
                 #Fill in end
@@ -148,10 +148,10 @@ def get_route(hostname):
                     bytes = struct.calcsize("d")
                     timeSent = struct.unpack("d", recvPacket[28:28 + bytes])[0]
                     rtt = timeReceived - timeSent
-                    rtt = str(rtt) + 'ms'
+                    rtt = str(rtt) + "ms"
                     tracelist1.append(rtt)
-                    tracelist1.append(addr[0])
-                    tracelist1.append(host)
+                    tracelist1.append(str(addr[0]))
+                    tracelist1.append(str(host))
                     tracelist2.append(tracelist1)
                     # destination unreachable
                     #Fill in start
@@ -161,10 +161,10 @@ def get_route(hostname):
                     bytes = struct.calcsize("d")
                     timeSent = struct.unpack("d", recvPacket[28:28 + bytes])[0]
                     rtt = timeReceived - timeSent
-                    rtt = str(rtt) + 'ms'
+                    rtt = str(rtt) + "ms"
                     tracelist1.append(rtt)
-                    tracelist1.append(addr[0])
-                    tracelist1.append(host)
+                    tracelist1.append(str(addr[0]))
+                    tracelist1.append(str(host))
                     print(tracelist1)
                     tracelist2.append(tracelist1)
 
@@ -183,6 +183,7 @@ def get_route(hostname):
                     #Fill in end
                 break
             finally:
+                # return tracelist2
                 mySocket.close()
 
 if __name__ == '__main__':
