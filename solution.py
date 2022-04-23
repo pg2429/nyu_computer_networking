@@ -150,7 +150,7 @@ def get_route(hostname):
                     rtt = timeReceived - timeSent
                     rtt = str(rtt) + 'ms'
                     tracelist1.append(rtt)
-                    tracelist1.append(addr)
+                    tracelist1.append(addr[0])
                     tracelist1.append(host)
                     tracelist2.append(tracelist1)
                     # destination unreachable
@@ -163,8 +163,9 @@ def get_route(hostname):
                     rtt = timeReceived - timeSent
                     rtt = str(rtt) + 'ms'
                     tracelist1.append(rtt)
-                    tracelist1.append(addr)
+                    tracelist1.append(addr[0])
                     tracelist1.append(host)
+                    print(tracelist1)
                     tracelist2.append(tracelist1)
 
                     if destAddr == addr:
